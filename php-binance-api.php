@@ -287,6 +287,7 @@ class API
         $json = $this->request("v1/depth", ["symbol" => $symbol, 'limit' => $limit]);
         if (!isset($this->info[$symbol])) $this->info[$symbol] = [];
         $this->info[$symbol]['firstUpdate'] = $json['lastUpdateId'];
+
         return $this->depthData($symbol, $json);
     }
 
@@ -821,12 +822,17 @@ class API
     {
         $bids = $asks = [];
         foreach ($json['bids'] as $obj) {
-            $bids[$obj[0]] = $obj[1];
+            $bids[] = [
+                'price' => $obj[0],
+                'size' => $obj[1]
+            ];
         }
         foreach ($json['asks'] as $obj) {
-            $asks[$obj[0]] = $obj[1];
-        }
-        return $this->depthCache[$symbol] = ["bids" => $bids, "asks" => $asks];
+            $asks[] = [
+                'price' => $obj[0],
+                'size' => $obj[1]
+            ];        }
+        return $this->depthCache[$symbol] = ["bid" => $bids, "ask" => $asks];
     }
 
     ////////////////////////////////////
