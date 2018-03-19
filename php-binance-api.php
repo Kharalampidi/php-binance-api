@@ -340,7 +340,7 @@ class API
             "http" => [
                 "method" => $method,
                 "ignore_errors" => true,
-                "header" => "User-Agent: Mozilla/4.0 (compatible; PHP Binance API)\r\nX-MBX-APIKEY: {$this->api_key}\r\n"
+                "header" => "Connection: Keep-Alive\r\nUser-Agent: Mozilla/4.0 (compatible; PHP Binance API)\r\nX-MBX-APIKEY: {$this->api_key}\r\n"
             ]
         ];
         $context = stream_context_create($opt);
@@ -415,6 +415,34 @@ class API
         if (isset($flags['icebergQty'])) $opt['icebergQty'] = $flags['icebergQty'];
         if (isset($flags['newOrderRespType'])) $opt['newOrderRespType'] = $flags['newOrderRespType'];
         return $this->signedRequest("v3/order", $opt, "POST");
+    }
+
+    /**
+     * @param $side
+     * @param $symbol
+     * @param $quantity
+     * @param $price
+     * @param string $type
+     * @param array $flags
+     * @return array|mixed
+     */
+    public function testOrder($side, $symbol, $quantity, $price, $type = "LIMIT", $flags = [])
+    {
+        $opt = [
+            "symbol" => $symbol,
+            "side" => $side,
+            "type" => $type,
+            "quantity" => $quantity,
+            "recvWindow" => 60000
+        ];
+        if ($type === "LIMIT" || $type === "STOP_LOSS_LIMIT" || $type === "TAKE_PROFIT_LIMIT") {
+            $opt["price"] = $price;
+            $opt["timeInForce"] = "GTC";
+        }
+        if (isset($flags['stopPrice'])) $opt['stopPrice'] = $flags['stopPrice'];
+        if (isset($flags['icebergQty'])) $opt['icebergQty'] = $flags['icebergQty'];
+        if (isset($flags['newOrderRespType'])) $opt['newOrderRespType'] = $flags['newOrderRespType'];
+        return $this->signedRequest("v3/order/test", $opt, "POST");
     }
 
     //1m,3m,5m,15m,30m,1h,2h,4h,6h,8h,12h,1d,3d,1w,1M
@@ -1049,5 +1077,10 @@ class API
         }, function ($e) {
             echo "userData: Could not connect: {$e->getMessage()}" . PHP_EOL;
         });
+    }
+
+    public static function generateClientOrderId()
+    {
+        return sprintf('%04x%04x%04x%04x%04x%04x%04x%04x', mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(16384, 20479), mt_rand(32768, 49151), mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535));
     }
 }
