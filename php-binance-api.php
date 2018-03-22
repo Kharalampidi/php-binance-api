@@ -127,9 +127,17 @@ class API
      * @param $orderid
      * @return array|mixed
      */
-    public function orderStatus($symbol, $orderid)
+    public function orderStatus($symbol, $orderId = null, $origClientOrderId = null)
     {
-        return $this->signedRequest("v3/order", ["symbol" => $symbol, "orderId" => $orderid]);
+        $condition = [];
+        if ($orderId) {
+            $condition = ['orderId' => $orderId];
+        } elseif ($origClientOrderId) {
+            $condition = ['origClientOrderId' => $origClientOrderId];
+        } else {
+            return false;
+        }
+        return $this->signedRequest("v3/order", array_merge(["symbol" => $symbol], $condition));
     }
 
     /**
@@ -409,7 +417,10 @@ class API
         ];
         if ($type === "LIMIT" || $type === "STOP_LOSS_LIMIT" || $type === "TAKE_PROFIT_LIMIT") {
             $opt["price"] = $price;
-            $opt["timeInForce"] = "GTC";
+            $opt["timeInForce"] = "IOC";
+        }
+        if ($type === 'LIMIT_MAKER') {
+            $opt["price"] = $price;
         }
         if (isset($flags['stopPrice'])) $opt['stopPrice'] = $flags['stopPrice'];
         if (isset($flags['icebergQty'])) $opt['icebergQty'] = $flags['icebergQty'];
@@ -859,7 +870,8 @@ class API
             $asks[] = [
                 'price' => $obj[0],
                 'size' => $obj[1]
-            ];        }
+            ];
+        }
         return $this->depthCache[$symbol] = ["bid" => $bids, "ask" => $asks];
     }
 
